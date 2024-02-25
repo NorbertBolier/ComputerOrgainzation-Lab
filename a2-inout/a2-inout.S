@@ -24,6 +24,8 @@
 # [constants/strings]
 prompt:
     .asciz "Enter a number: <x>\n"
+incremented_number:
+    .asciz "The incremented number is: <x+%lu>\n"
 
 input:
     .asciz "%ld"
@@ -44,10 +46,13 @@ main:
     subq    $8, %rsp 
     call    scanf
     addq    $8, %rsp  
-    popq    %rdi  
-    subq    $8, %rsp
+    popq    %rdi
+    
+    call my_inc
+    movq    %rax, %rsi
 
-    movb    $0, %al       # testing
+    leaq    incremented_number(%rip), %rdi
+    movb    $0, %al
     call    printf
 
     movq    $0, %rax  
@@ -59,5 +64,13 @@ main:
 _my_inc:
 my_inc:
     # Implement me!
+    pushq   %rbp                    
+    movq    %rsp, %rbp      # Prologue 
+
+    incq    %rdi 
+    movq    %rdi, %rax
+
+    movq    %rbp, %rsp              # Epilogue
+    popq    %rbp 
     ret
     
