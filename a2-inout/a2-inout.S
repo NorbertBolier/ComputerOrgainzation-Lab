@@ -23,9 +23,9 @@
 .text
 # [constants/strings]
 prompt:
-    .asciz "Enter a number: <x>\n"
+    .asciz "Enter a number: "
 incremented_number:
-    .asciz "The incremented number is: <x+%lu>\n"
+    .asciz "The incremented number is: %ld"
 
 input:
     .asciz "%ld"
