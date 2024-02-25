@@ -18,10 +18,14 @@ hello_world:
 
 _main:
 main:
-    pushq   %rbp                    # save previous base pointer
-    movq    %rsp, %rbp  
-    subq    $8, %rsp
+    pushq   %rbp                    
+    movq    %rsp, %rbp      # Prologue 
 
+    leaq    hello_world(%rip), %rdi
+    movb    $0, %al
+    call    printf
 
-    popq    %rbp 
+    movq    $0, %rax  
+    movq    %rbp, %rsp              # Epilogue
+    popq    %rbp    
     ret
