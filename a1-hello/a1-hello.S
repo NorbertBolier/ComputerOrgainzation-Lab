@@ -13,9 +13,15 @@
 # [initialized static variables]
 
 .text
-# [constants/strings]
+hello_world:
+    .asciz "Computer Organization 2024\nAssignment 1 - hello\nby Norbert Bolier\n"
 
 _main:
 main:
-    # Implement me!
+    pushq   %rbp                    # save previous base pointer
+    movq    %rsp, %rbp  
+    subq    $8, %rsp
+
+
+    popq    %rbp 
     ret
