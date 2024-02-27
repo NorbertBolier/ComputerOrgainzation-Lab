@@ -26,9 +26,11 @@ base:
 exponent:
     .asciz "Enter an exponent: "
 output:
-    .asciz "%ld^%ld = %ld"
-input:
+    .asciz "%ld^%lu = %ld"
+inputbase:
     .asciz "%ld"
+inputexponent:
+    .asciz "%lu"
 
 _main:
 main:
@@ -39,7 +41,7 @@ main:
     movb    $0, %al
     call    printf
 
-    leaq    input(%rip), %rdi
+    leaq    inputbase(%rip), %rdi
     subq    $8, %rsp 
     movq    %rsp, %rsi 
     movb    $0, %al
@@ -53,7 +55,7 @@ main:
     movb    $0, %al
     call    printf
 
-    leaq    input(%rip), %rdi
+    leaq    inputexponent(%rip), %rdi
     subq    $8, %rsp 
     movq    %rsp, %rsi
     movb    $0, %al  
@@ -83,10 +85,24 @@ _my_pow:
 my_pow:
     pushq   %rbp                    
     movq    %rsp, %rbp      # Prologue 
-    # Implement me! need a loop to loop to times base as many times as exponent
 
-    movq    $300, %rax
+    cmpq    $0, %rsi
+    je      ifcode
+    jmp     else
+ifcode:
+    movq    $1, %rax
+    jmp     end
+else:
+    movq    %rdi, %rax
+    jmp     loop
+loop:
+    cmpq    $1, %rsi
+    je      end
+    imul    %rdi, %rax
+    decq    %rsi
+    jmp     loop
 
+end:
     movq    %rbp, %rsp              # Epilogue
     popq    %rbp   
     ret
