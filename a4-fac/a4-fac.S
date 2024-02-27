@@ -79,9 +79,9 @@ ifelsecode:
     movq    $1, %rax
     jmp     end
 else:
-    decq %rdi               
-    call my_factorial       
-    imulq %rdi, %rax  
+    decq    %rdi               
+    call    my_factorial       
+    imulq   %rdi, %rax  
 
 end:
     movq    %rbp, %rsp              # Epilogue
