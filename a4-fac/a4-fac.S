@@ -68,19 +68,22 @@ my_factorial:
     movq    %rsp, %rbp      # Prologue 
 
     cmpq    $1, %rdi
+    jg     else
     je      ifcode
     cmpq    $0, %rdi
     je      ifcode
-    jmp     else
 
 ifcode:
     movq    $1, %rax
     jmp     end
+
 else:
-    decq    %rdi               
-    call    my_factorial       
-    imulq   %rdi, %rax 
-    jmp     end 
+    movq    %rdi, %rsi
+    decq    %rdi
+    call    my_factorial            # n * n-1
+    imul    %rsi, %rax
+    incq    %rsi
+    jmp     end
 
 end:
     movq    %rbp, %rsp              # Epilogue
