@@ -70,18 +70,17 @@ my_factorial:
     cmpq    $1, %rdi
     je      ifcode
     cmpq    $0, %rdi
-    je      ifelsecode
+    je      ifcode
     jmp     else
 
 ifcode:
-    jmp     end
-ifelsecode:
     movq    $1, %rax
     jmp     end
 else:
     decq    %rdi               
     call    my_factorial       
-    imulq   %rdi, %rax  
+    imulq   %rdi, %rax 
+    jmp     end 
 
 end:
     movq    %rbp, %rsp              # Epilogue
