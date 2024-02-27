@@ -24,9 +24,9 @@
 prompt:
     .asciz "Enter a number: "
 input:
-    .asciz "%ld"
+    .asciz "%lu"
 output:
-    .asciz "%ld! = %ld"
+    .asciz "%lu! = %lu"
 
 
 _main:
@@ -48,7 +48,6 @@ main:
     popq    %r12
     
     movq    %r12, %rdi
-    movq    %r12, %rsi
     call    my_factorial
 
     leaq    output(%rip), %rdi
@@ -57,6 +56,7 @@ main:
     movb    $0, %al
     call    printf
 
+    movq    $0, %rax
     movq    %rbp, %rsp              # Epilogue
     popq    %rbp   
     ret
@@ -67,7 +67,6 @@ my_factorial:
     pushq   %rbp                    
     movq    %rsp, %rbp      # Prologue 
 
-
     cmpq    $1, %rdi
     je      ifcode
     cmpq    $0, %rdi
@@ -75,16 +74,14 @@ my_factorial:
     jmp     else
 
 ifcode:
-    movq    %rsi, %rax
     jmp     end
 ifelsecode:
     movq    $1, %rax
     jmp     end
 else:
-    decq    %rdi
-    imul    %rdi, %rsi
-    movq    %rsi, %rax
-    call    my_factorial
+    decq %rdi               
+    call my_factorial       
+    imulq %rdi, %rax  
 
 end:
     movq    %rbp, %rsp              # Epilogue
