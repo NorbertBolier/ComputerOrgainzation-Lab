@@ -106,3 +106,5 @@ end:
     movq    %rbp, %rsp              # Epilogue
     popq    %rbp   
     ret
+
+    # make a3-power/a3-power && ./a3-power/a3-power

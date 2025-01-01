@@ -89,3 +89,5 @@ end:
     movq    %rbp, %rsp              # Epilogue
     popq    %rbp  
     ret
+
+    # make a4-fac/a4-fac && ./a4-fac/a4-fac

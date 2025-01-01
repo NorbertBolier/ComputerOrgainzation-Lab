@@ -29,3 +29,5 @@ main:
     movq    %rbp, %rsp              # Epilogue
     popq    %rbp    
     ret
+
+# make a1-hello/a1-hello && ./a1-hello/a1-hello

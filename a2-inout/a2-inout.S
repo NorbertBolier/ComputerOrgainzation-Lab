@@ -74,3 +74,4 @@ my_inc:
     popq    %rbp 
     ret
     
+# make a2-inout/a2-inout && ./a2-inout/a2-inout
