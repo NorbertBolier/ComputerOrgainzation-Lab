@@ -31,10 +31,6 @@ array_ptr:
 .data
 sizeof_uint64:
     .quad 8
-malloc_fail_msg:
-    .asciz "Memory allocation failed!\n"
-malloc_sucess_msg:
-    .asciz "Memory allocation Succeeded!\n"
 
 .text
 prompt:
@@ -112,116 +108,62 @@ my_fib:
     cmpq    %rbx, %r13
     jle     allocate_increase
     cmpq    %rbx, %r13
-    jg      return_existing
+    jg      give_result
 
 first_allocation:
-    movq    %rbx, %rdi
     incq    %rdi
     movq    %rdi, %r14
     imulq   sizeof_uint64(%rip), %rdi
     call    malloc
-    jmp     check_alloc
+    jmp     allocation_success
 
 allocate_increase:
-    movq    %rbx, %rdi
-    incq    %rdi
-    movq    %rdi, %r14
-    imulq   sizeof_uint64(%rip), %rdi
+    movq    array_ptr(%rip), %rdi
+    movq    %rbx, %rsi
+    incq    %rsi
+    movq    %rsi, %r14
+    imulq   sizeof_uint64(%rip), %rsi
     call    realloc
-    jmp     check_alloc
 
-check_alloc:
-    cmpq    $0, %rax
-    jne     alloc_success
-    # Print error message if allocation failed
-    pushq   %rax
-    leaq    malloc_fail_msg(%rip), %rdi
-    movb    $0, %al
-    call    printf
-    popq    %rax
-    jmp     cleanup
-
-alloc_success:
-# chekcing if allocation worked
-    pushq   %rax
-    leaq    malloc_sucess_msg(%rip), %rdi
-    movb    $0, %al
-    call    printf
-    popq    %rax
-
-
-    movq    %rax, %r12             # Store new array pointer
-    movq    %rax, array_ptr(%rip)  # Update global array_ptr immediately
+allocation_success:
+    movq    %rax, %r12
+    cmpq    $2, %r13
+    jge     calculate_increase
     
-    # If old array was NULL, initialize F(0) and F(1)
-    cmpq    $2, %r13               # Check if we need to initialize
-    jge     fill_remaining
-    
-    # Initialize F(0) = 0, F(1) = 1
-    movq    $0, (%r12)             # F(0) = 0
-    movq    $1, 8(%r12)            # F(1) = 1
-    movq    $2, %r13               # Start with size 2
+    movq    $0, (%r12)
+    movq    $1, 8(%r12)
+    movq    $2, %r13
 
-fill_remaining:
-    # Update current_size before filling
-    movq    %r14, current_size(%rip)  # Update current_size before filling
-    
-    # Start filling from current size to i
-    movq    %r13, %rcx             # Counter = current size
-    cmpq    %rcx, %rbx             # Compare target index with counter
-    jl      get_result             # If target index < counter, get existing result
+calculate_increase:
+    movq    %r14, current_size(%rip)
+    movq    %r13, %rcx
+    cmpq    %rcx, %rbx
+    jl      give_result
 
-fill_loop:
+calculate_fib:
     cmpq    %rcx, %rbx           
-    jl      finish               
+    jl      give_result               
     
-    # Calculate F(n) = F(n-1) + F(n-2)
-    movq    %rcx, %r15            # Current index
+    movq    %rcx, %r15
     
-    # Get F(n-1)
-    decq    %r15                  # n-1
-    movq    (%r12,%r15,8), %rax   # Load F(n-1)
+    decq    %r15
+    movq    (%r12,%r15,8), %rax
     
-    # Get F(n-2)
-    decq    %r15                  # n-2
-    addq    (%r12,%r15,8), %rax   # Add F(n-2)
+    decq    %r15
+    addq    (%r12,%r15,8), %rax
     
-    # Store F(n)
-    movq    %rcx, %r15            # Restore current index
-    movq    %rax, (%r12,%r15,8)   # Store result at F(n)
+    movq    %rcx, %r15
+    movq    %rax, (%r12,%r15,8)
     
-    incq    %rcx                  # Increment counter
-    jmp     fill_loop            # Continue filling
+    incq    %rcx
+    jmp     calculate_fib
 
-finish:
-    movq    (%r12,%rbx,8), %rax   # Load F(n) for return value
-    jmp     cleanup              # Jump to cleanup
-
-get_result:
-    movq    (%r12,%rbx,8), %rax   # Load F(n) for return value
-    jmp     cleanup
-
-return_existing:
-    movq    (%r12,%rbx,8), %rax   # Load the actual Fibonacci number at index
-    jmp     cleanup
-
-cleanup:
-    # Update globals before returning
-    movq    %r12, array_ptr(%rip)  # Save array pointer
-    movq    %r14, current_size(%rip) # Save new size
+give_result:
+    movq    (%r12,%rbx,8), %rax
+    movq    %r12, array_ptr(%rip)
+    movq    %r14, current_size(%rip)
     
     popq    %r13
     movq    %rbp, %rsp
     popq    %rbp
     ret
-
-# uint64_t *my_fib(uint64_t n, uint64_t *arr, uint64_t size)
-_my_test:
-test:
-    pushq   %rax #debug
-    pushq   %rdi
-    leaq    tests(%rip), %rdi
-    movb    $0, %al
-    call    printf
-    popq    %rdi
-    popq    %rax
