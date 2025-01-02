@@ -59,9 +59,10 @@ loop_start:
     movq    %rsp, %rsi
     movb    $0, %al
     call    scanf
-    cmpq    $1, %rax
-    jl      exit_program
-    
+    cmpq    $0, %rax
+    jz      exit_program
+
+
     movq    (%rsp), %rdi
     movq    array_ptr(%rip), %rsi
     movq    current_size(%rip), %rdx
@@ -115,6 +116,7 @@ first_allocation:
     movq    %rdi, %r14
     imulq   sizeof_uint64(%rip), %rdi
     call    malloc
+    movq    %rax, array_ptr(%rip)
     jmp     allocation_success
 
 allocate_increase:
@@ -124,9 +126,10 @@ allocate_increase:
     movq    %rsi, %r14
     imulq   sizeof_uint64(%rip), %rsi
     call    realloc
+    movq    %rax, array_ptr(%rip)
 
 allocation_success:
-    movq    %rax, %r12
+    movq    array_ptr(%rip), %r12
     cmpq    $2, %r13
     jge     calculate_increase
     
@@ -145,16 +148,12 @@ calculate_fib:
     jl      give_result               
     
     movq    %rcx, %r15
-    
     decq    %r15
     movq    (%r12,%r15,8), %rax
-    
     decq    %r15
     addq    (%r12,%r15,8), %rax
-    
     movq    %rcx, %r15
     movq    %rax, (%r12,%r15,8)
-    
     incq    %rcx
     jmp     calculate_fib
 
