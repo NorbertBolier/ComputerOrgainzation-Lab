@@ -60,14 +60,20 @@ changestring:
 tests:
     .asciz "Sucessful Open"
 # [constants/strings]
-debug_open:
+file_opened_successfully: # file_opened_successfully
     .asciz "Debug: File opened successfully, FILE* = %p\n"
-debug_line:
-    .asciz "fgets result = %p\n"    # Show the pointer returned by fgets
-debug_handle:
-    .asciz "Using FILE* = %p\n"
-debug_content:
+buffers_allocated_at_A_B: # buffers_allocated_at_A_B
+    .asciz "Buffers allocated at: A=%p, B=%p\n"
+using_buffer_at: # using_buffer_at
+    .asciz "Using buffer at: %p\n"
+fgets_result: # fgets_result
+    .asciz "fgets result = %p\n"    
+read_content: # read_content
     .asciz "Read content: '%s'\n"
+strcmp_result_is:
+    .asciz "strcmp result is: %d\n"
+line_number:
+    .asciz "Line number: %d\n"
 
 # int my_diff(const char *a, const char *b, bool flag_i, bool flag_B)
 _my_diff:
@@ -75,119 +81,128 @@ my_diff:
     pushq   %rbp
     movq    %rsp, %rbp
     
-    subq    $1024, %rsp
+    # Align stack and make space for buffers
+    subq    $2048, %rsp          # Space for two 1024-byte buffers
+    andq    $-16, %rsp           # Ensure 16-byte alignment
+    movq    %rsi, %r12
     
-    movq    %rdi, %r12
-    movq    %rsi, %r13
-    movq    %rdx, %r14
-    movq    %rcx, %r15
+    # Open first file
+    # rdi already has first filename
+    leaq    read_mode(%rip), %rsi # "r"
+    call    fopen
+    movq    %rax, %rbx           # Save FILE* A
     
-    movq    %r12, %rdi 
+    # Print debug for first file
+    leaq    file_opened_successfully(%rip), %rdi
+    movq    %rax, %rsi
+    xorb    %al, %al
+    call    printf
+    
+    # Open second file
+    movq    %r12, %rdi
     leaq    read_mode(%rip), %rsi
     call    fopen
+    movq    %rax, %r12
     
-    movq    %r13, %rdi
-    leaq    read_mode(%rip), %rsi
-    call    fopen
+    # Print debug for second file
+    leaq    file_opened_successfully(%rip), %rdi
+    movq    %rax, %rsi
+    xorb    %al, %al
+    call    printf
 
-continue_program:
-    # Allocate space for line buffers
-    subq    $2048, %rsp
-    movq    %rsp, %r8
-    leaq    1024(%rsp), %r9
+    # Initialize buffers and print their addresses
+    movq    %rsp, %r13            # buffer A
+    leaq    1024(%rsp), %r14      # buffer B
     
-    # Initialize line counter
-    movq    $1, %r11
+    # Print buffer addresses
+    leaq    buffers_allocated_at_A_B(%rip), %rdi
+    movq    %r13, %rsi
+    movq    %r14, %rdx
+    xorb    %al, %al
+    call    printf
+
+    movq    $0, %r15            # line counter
 
 compare_loop:
-    movq    %rbx, %rdi           # FILE* handle
-    movq    %r8, %rsi            # buffer
-    movq    $1024, %rdx          # max length
+    # Debug print file handle
+    leaq    using_buffer_at(%rip), %rdi  # r12 is pointer to second file rbx is to first
+    movq    %r13, %rsi
+    xorb    %al, %al
+    call    printf
+
+    incq    %r15
+    leaq    line_number(%rip), %rdi
+    movq    %r15, %rsi
+    xorb    %al, %al
+    call    printf
+
+    # Try to read from file A
+    movq    %rbx, %rdx           # FILE* A
+    movq    %r13, %rdi            # buffer A
+    movq    $1024, %rsi          # size
     call    fgets
+    movq    %rax, 2048(%rsp) 
     
-    # Debug print fgets result
-    movq    %rax, %r12           # save fgets result
-    leaq    debug_line(%rip), %rdi
-    movq    %rax, %rsi           # pass fgets result as argument
+    # Debug print result
+    leaq    fgets_result(%rip), %rdi
+    movq    2048(%rsp), %rsi
+    xorb    %al, %al
+    call    printf
+    leaq    read_content(%rip), %rdi
+    movq    %r13, %rsi
     xorb    %al, %al
     call    printf
 
-    leaq    debug_content(%rip), %rdi
-    movq    %r8, %rsi            # buffer content
-    xorb    %al, %al
-    call    printf
-
-    movq    %r13, %rdi
-    movq    %r9, %rsi
-    movq    $1024, %rdx
+    movq    %r12, %rdx
+    movq    %r14, %rdi
+    movq    $1024, %rsi
     call    fgets
-    movq    %rax, %r15           # holds line from B
+    movq    %rax, 2056(%rsp)
 
-    # Simple debug print with no arguments
-    movq    %rax, %r12           # save fgets result
-    leaq    debug_line(%rip), %rdi
-    movq    %rax, %rsi           # pass fgets result as argument
+    leaq    fgets_result(%rip), %rdi
+    movq    2056(%rsp), %rsi           # pass fgets result as argument
     xorb    %al, %al
     call    printf
-
-    # Check if either file is at the end of the file
-    cmpq    $0, %r12
-    je      check_b_eof
-    cmpq    $0, %r15
-    je      files_different
-
+    leaq    read_content(%rip), %rdi
+    movq    %r14, %rsi
+    xorb    %al, %al
+    call    printf
+    
     # Compare the lines
-    movq    %r8, %rdi            # line from file A
-    movq    %r9, %rsi            # line from file B
+    movq    %r13, %rdi            # line from file A
+    movq    %r14, %rsi            # line from file B
     call    strcmp
-    
-    testq   %rax, %rax
-    jz      lines_match          # if equal, continue to next line
 
-    # Lines are different - print diff output
-    leaq    changestring(%rip), %rdi
-    movq    %r11, %rsi           # current line number
-    movq    %r11, %rdx           # same for both in this case
+    leaq    strcmp_result_is(%rip), %rdi
+    movq    %rax, %rsi
     xorb    %al, %al
     call    printf
     
-    # Print line from file A
-    leaq    changestring+8(%rip), %rdi
-    movq    %r8, %rsi
-    xorb    %al, %al
-    call    printf
-    
-    # Print separator
-    leaq    changestring+16(%rip), %rdi
-    xorb    %al, %al
-    call    printf
-    
-    # Print line from file B
-    leaq    changestring+24(%rip), %rdi
-    movq    %r9, %rsi
-    xorb    %al, %al
-    call    printf
+    cmpq    $0, %rax
+    je      lines_match          # if equal, continue to next line
+    jmp     lines_differ
 
-lines_match:
-    incq    %r11                 # increment line counter
-    jmp     compare_loop
-
-check_b_eof:
-    cmpq    $0, %r15             # check if B is also at EOF
-    je      files_same           # if both at EOF, files are same
-    
-files_different:
-    movq    $1, %rax             # return 1 if files are different
+lines_differ:
+    leaq    tests(%rip), %rdi
+    xorb    %al, %al
+    call    printf
     jmp     cleanup
 
-files_same:
-    movq    %r13, %rdi
+lines_match:    
+    leaq    tests(%rip), %rdi      # increment line counter
+    xorb    %al, %al
+    call    printf
+    cmpq    $3, %r15
+    je      cleanup
+    # jmp     compare_loop
+    
+cleanup:
+    # Close files
+    movq    %r12, %rdi
     call    fclose
     movq    %rbx, %rdi
     call    fclose
     
-cleanup:
-    # Restore stack and registers
     movq    %rbp, %rsp
     popq    %rbp
     ret
