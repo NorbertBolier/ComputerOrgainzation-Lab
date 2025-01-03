@@ -51,6 +51,9 @@
 read_mode:
     .asciz "r"
 
+.LC0:
+    .asciz "Debug - Pointer A: %p, Pointer B: %p\n"
+
 .text
 changestring:
     .ascii "%dc%d\n"
@@ -58,7 +61,7 @@ changestring:
     .ascii "---\n"
     .asciz "> %s\n"
 tests:
-    .asciz "Sucessful Open"
+    .asciz "Sucessful Open\n"
 # [constants/strings]
 file_opened_successfully: # file_opened_successfully
     .asciz "Debug: File opened successfully, FILE* = %p\n"
@@ -82,8 +85,7 @@ my_diff:
     movq    %rsp, %rbp
     
     # Align stack and make space for buffers
-    subq    $2048, %rsp          # Space for two 1024-byte buffers
-    andq    $-16, %rsp           # Ensure 16-byte alignment
+    subq    $2064, %rsp          # Space for two 1024-byte buffers
     movq    %rsi, %r12
     
     # Open first file
@@ -167,7 +169,15 @@ compare_loop:
     movq    %r14, %rsi
     xorb    %al, %al
     call    printf
-    
+
+    cmpq    $0, 2048(%rsp) # compare 
+    je      compare_second
+    jmp     compare 
+compare_second:
+    cmpq    $0, 2056(%rsp) #
+    je      end
+
+compare:
     # Compare the lines
     movq    %r13, %rdi            # line from file A
     movq    %r14, %rsi            # line from file B
@@ -177,34 +187,23 @@ compare_loop:
     movq    %rax, %rsi
     xorb    %al, %al
     call    printf
-    
+
+
     cmpq    $0, %rax
-    je      lines_match          # if equal, continue to next line
-    jmp     lines_differ
+    je      compare_loop
 
-lines_differ:
-    leaq    tests(%rip), %rdi
-    xorb    %al, %al
-    call    printf
-    jmp     cleanup
+    jmp     compare_loop
 
-lines_match:    
-    leaq    tests(%rip), %rdi      # increment line counter
-    xorb    %al, %al
-    call    printf
-    cmpq    $3, %r15
-    je      cleanup
-    # jmp     compare_loop
-    
-cleanup:
-    # Close files
-    movq    %r12, %rdi
-    call    fclose
-    movq    %rbx, %rdi
+end:
+    movq    %rbx, %rdi           # FILE* A
     call    fclose
     
-    movq    %rbp, %rsp
-    popq    %rbp
-    ret
+    movq    %r12, %rdi           # FILE* B
+    call    fclose 
 
-# make a5-diff/a5-diff && ./a5-diff/a5-diff
+    addq    $2064, %rsp
+    movq    %rbp, %rsp           # Restore stack pointer
+    popq    %rbp   
+    ret     
+
+# make a5-diff/a5-diff && ./a5-diff/a5-diff  ./a5-diff/a5-diff a5-diff/test1/a.txt a5-diff/test1/b.txt
