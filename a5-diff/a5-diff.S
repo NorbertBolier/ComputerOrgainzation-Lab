@@ -60,6 +60,12 @@ changestring:
     .ascii "< %s\n"
     .ascii "---\n"
     .asciz "> %s\n"
+matching_lines:
+    .ascii "%dc%d\n"
+text_line:
+    .ascii "< %s\n"
+seperator:
+    .ascii "---\n"
 tests:
     .asciz "Sucessful Open\n"
 # [constants/strings]
@@ -190,8 +196,10 @@ compare:
 
 
     cmpq    $0, %rax
-    je      compare_loop
+    jne     print_sentences
+    jmp     compare_loop
 
+print_sentences:
     jmp     compare_loop
 
 end:
